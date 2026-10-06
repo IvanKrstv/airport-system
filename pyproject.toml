@@ -1,0 +1,20 @@
+[project]
+name = "airport-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ivan Krastev", email = "igkrastev@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg[binary]>=3.3.6",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+airport-system = "airport_system:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
