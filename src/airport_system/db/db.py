@@ -3,9 +3,11 @@ from dotenv import load_dotenv
 import psycopg
 from psycopg import Connection
 from psycopg.rows import dict_row
-from psycopg.sql import SQL
+
+from airport_system.db.queries import REVENUE_BY_CLASS_QUERY
 
 load_dotenv()
+
 
 def get_connection(autocommit=False) -> Connection:
     return psycopg.connect(
@@ -19,7 +21,9 @@ def get_connection(autocommit=False) -> Connection:
     )
 
 
-def query(sql: SQL, params=None) -> list[dict]:
+def query(sql, params=None) -> list[dict]:
     with get_connection() as connection:
         return connection.execute(sql, params).fetchall()
 
+# Test
+print(query(REVENUE_BY_CLASS_QUERY, {'date_from': '2026-08-01', 'date_to': '2026-12-31'}))
