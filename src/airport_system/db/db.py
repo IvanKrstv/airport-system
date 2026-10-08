@@ -4,7 +4,7 @@ import psycopg
 from psycopg import Connection
 from psycopg.rows import dict_row
 
-from airport_system.db.queries import REVENUE_BY_CLASS_QUERY
+from airport_system.db.queries import REVENUE_BY_CLASS_QUERY, FREQUENT_TRAVELERS_QUERY
 
 load_dotenv()
 
@@ -26,4 +26,4 @@ def query(sql, params=None) -> list[dict]:
         return connection.execute(sql, params).fetchall()
 
 # Test
-print(query(REVENUE_BY_CLASS_QUERY, {'date_from': '2026-08-01', 'date_to': '2026-12-31'}))
+print(query(FREQUENT_TRAVELERS_QUERY, {'months': 6, 'min_trips': 2}))

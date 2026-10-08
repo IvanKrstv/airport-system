@@ -67,7 +67,7 @@ ORDER BY f.flight_timestamp;
 """
 
 
-# Total revenue per seat class for a period
+# Total revenue per seat class in a period
 # noinspection SqlResolve
 REVENUE_BY_CLASS_QUERY = """
 SELECT
@@ -82,3 +82,42 @@ WHERE (%(date_from)s::date IS NULL OR t.sold_at::date >= %(date_from)s::date)
 GROUP BY sc.seat_class_id, sc.seat_class_name
 ORDER BY revenue DESC;
 """
+
+
+# Most profitable destinations for a period (by sale date)
+# noinspection SqlResolve
+TOP_DESTINATIONS_QUERY = """
+SELECT
+    d.city_name,
+    COUNT(t.ticket_id) AS total_tickets,
+    SUM(t.final_price) AS total_revenue
+FROM Ticket t
+JOIN Flight f      ON f.flight_id = t.flight_id
+JOIN Destination d ON d.destination_id = f.to_destination_id
+WHERE (%(date_from)s::date IS NULL OR t.sold_at::date >= %(date_from)s::date)
+  AND (%(date_to)s::date   IS NULL OR t.sold_at::date <= %(date_to)s::date)
+GROUP BY d.destination_id, d.city_name
+ORDER BY total_revenue DESC, total_tickets DESC
+LIMIT %(top_n)s;
+"""
+
+
+# Frequent travelers in a period
+# noinspection SqlResolve
+FREQUENT_TRAVELERS_QUERY = """
+SELECT
+    p.passenger_name,
+    c.country_name     AS nationality,
+    COUNT(t.ticket_id) AS total_trips
+FROM Ticket t
+JOIN Flight f    ON f.flight_id = t.flight_id
+JOIN Passenger p ON p.passenger_id = t.passenger_id
+JOIN Country c   ON c.country_id = p.country_id
+WHERE f.flight_timestamp::date >= current_date - make_interval(months => %(months)s::int)
+  AND f.flight_timestamp::date <= current_date
+GROUP BY p.passenger_id, p.passenger_name, c.country_id, c.country_name
+HAVING COUNT(t.ticket_id) >= %(min_trips)s
+ORDER BY total_trips DESC, p.passenger_name;
+"""
+
+
