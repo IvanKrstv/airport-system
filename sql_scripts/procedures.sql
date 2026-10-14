@@ -210,3 +210,35 @@ BEGIN
     END IF;
 end;
 $$;
+
+
+--------------------------------------------------------
+
+
+CREATE OR REPLACE PROCEDURE sp_flight_stats(
+    p_flight_id INTEGER,
+    OUT p_tickets_sold INTEGER,
+    OUT p_revenue NUMERIC,
+    OUT p_free_seats INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_flight_id IS NULL THEN
+        RAISE EXCEPTION 'Flight ID cannot be null';
+    end if;
+
+    IF NOT EXISTS(SELECT 1 FROM flight WHERE flight_id = p_flight_id) THEN
+        RAISE EXCEPTION 'Flight with this ID does not exist.';
+    end if;
+
+    SELECT COUNT(t.ticket_id) AS tickets_sold, COALESCE(SUM(t.final_price), 0), m.model_capacity - COUNT(t.ticket_id)
+    INTO p_tickets_sold, p_revenue, p_free_seats
+    FROM Flight f
+    JOIN Plane p ON p.plane_id = f.plane_id
+    JOIN Model m ON m.model_id = p.model_id
+    LEFT JOIN Ticket t ON t.flight_id = f.flight_id
+    WHERE f.flight_id = p_flight_id
+    GROUP BY f.flight_id, m.model_capacity;
+end;
+$$;
