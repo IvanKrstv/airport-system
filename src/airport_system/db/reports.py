@@ -1,3 +1,5 @@
+from datetime import date
+
 from airport_system.db.connection import query
 from airport_system.db import queries
 
@@ -94,4 +96,4 @@ def no_flight_planes(date_from=None, date_to=None, company=None) -> list[dict]:
 
 
 # Test
-print(passengers_per_flight(4))
+print(no_flight_planes(date(2026,10,1), date(2026,10,31), 'Airbus'))

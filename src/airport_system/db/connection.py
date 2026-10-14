@@ -26,8 +26,15 @@ def query(sql, params: dict | None = None) -> list[dict]:
         return connection.execute(sql, params).fetchall()
 
 
-def call_procedure(name: str, params: list | None = None, autocommit=False) -> None:
-    placeholders = ', '.join(['%s'] * len(params)) if params else ''
-    call_query = f"CALL {name}({placeholders})"
+# def call_procedure(name: str, params: list | None = None, autocommit=False) -> None:
+#     placeholders = ', '.join(['%s'] * len(params)) if params else ''
+#     call_query = f"CALL {name}({placeholders})"
+#     with get_connection(autocommit=autocommit) as connection:
+#         connection.execute(call_query, params or [])
+
+def call_procedure(name: str, params: dict | None = None, autocommit: bool = False) -> None:
+    params = params or {}
+    args = ', '.join(f"{key} => %({key})s" for key in params)
+    call_query = f"CALL {name}({args})"
     with get_connection(autocommit=autocommit) as connection:
-        connection.execute(call_query, params or [])
+        connection.execute(call_query, params)
