@@ -15,7 +15,7 @@ def _none_if_empty(value: str | None):
 
 def _check_period(date_from, date_to):
     """
-    Helper function to prevent the start date to exceed the end date
+    Helper function to prevent the start date from exceeding the end date
     """
     if date_from is None or date_to is None:
         return
