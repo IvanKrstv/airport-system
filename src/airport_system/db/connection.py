@@ -4,7 +4,6 @@ import psycopg
 from psycopg import Connection
 from psycopg.rows import dict_row
 
-from airport_system.db.queries import NO_FLIGHT_PLANES_QUERY
 
 load_dotenv()
 

@@ -118,6 +118,43 @@ $$;
 --------------------------------------------------------
 
 
+-- returns a cursor for the task
+CREATE OR REPLACE PROCEDURE sp_revenue_report_cursor(
+    p_date_from DATE DEFAULT NULL,
+    p_date_to DATE DEFAULT NULL,
+    INOUT p_cursor refcursor DEFAULT 'revenue_cursor'
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_date_from IS NOT NULL AND p_date_to IS NOT NULL AND p_date_from > p_date_to THEN
+        RAISE EXCEPTION 'The start date cannot be after the end date.';
+    END IF;
+
+    OPEN p_cursor FOR
+        SELECT
+            d_from.city_name as from_city,
+            d_to.city_name AS to_city,
+            sc.seat_class_name AS seat_class,
+            COUNT(t.ticket_id) AS tickets_sold,
+            SUM(t.final_price) AS total_revenue
+        FROM Ticket t
+        JOIN Flight f ON f.flight_id = t.flight_id
+        JOIN Destination d_from ON d_from.destination_id = f.from_destination_id
+        JOIN Destination d_to ON d_to.destination_id = f.to_destination_id
+        JOIN Seat s ON s.seat_id = t.seat_id
+        JOIN SeatClass sc ON sc.seat_class_id = s.seat_class_id
+        WHERE (p_date_from IS NULL OR t.sold_at::date >= p_date_from)
+          AND (p_date_to IS NULL OR t.sold_at::date <= p_date_to)
+        GROUP BY d_from.destination_id, d_to.destination_id, sc.seat_class_id, d_from.city_name, d_to.city_name, sc.seat_class_name
+        ORDER BY total_revenue DESC, from_city, to_city, seat_class;
+END;
+$$;
+
+
+--------------------------------------------------------
+
+
 CREATE OR REPLACE PROCEDURE sell_ticket(
     p_flight_id flight.flight_id%type,
     p_seat_name seat.seat_name%type,
