@@ -19,8 +19,7 @@ from airport_system.db.tables import TABLES, Table
 def list_rows(table_key: str, order_by: str | None = None,
               descending: bool = False) -> list[dict]:
     table = TABLES[table_key]
-    # select_parts = [f't."{table.pk}" AS "ID"']
-    select_parts = []
+    select_parts = [f't."{table.pk}" AS "_pk"']
     joins = []
     order_exprs = {table.pk: f't."{table.pk}"'}
 
@@ -85,12 +84,10 @@ def country_name(country_id: int) -> str:
     return rows[0]['country_name']
 
 
-# ---------------------------------------------------------------- писане
-
 def add(table_key: str, values: dict) -> None:
     table = TABLES[table_key]
     if table_key == 'ticket':
-        raise ValueError('Билетите се продават през процедурата sell_ticket.')
+        raise ValueError('Tickets are sold through the sell_ticket procedure.')
     values = _clean_values(table, values)
 
     if table_key == 'passenger':
@@ -103,7 +100,7 @@ def add(table_key: str, values: dict) -> None:
 def edit(table_key: str, pk_value: int, values: dict) -> None:
     table = TABLES[table_key]
     if not table.can_edit:
-        raise ValueError('Тази таблица не позволява редакция.')
+        raise ValueError('This table does not allow editing.')
     values = _clean_values(table, values)
 
     if table_key == 'passenger':
@@ -117,7 +114,7 @@ def edit(table_key: str, pk_value: int, values: dict) -> None:
 def remove(table_key: str, pk_value: int, force: bool = False) -> None:
     table = TABLES[table_key]
     if not table.can_delete:
-        raise ValueError('Тази таблица не позволява изтриване.')
+        raise ValueError('This table does not allow deleting.')
 
     if table_key == 'flight':
         procedures.delete_flight(pk_value, force)
@@ -137,10 +134,10 @@ def _clean_values(table: Table, values: dict) -> dict:
             value = (value or '').strip()
             if not value:
                 if not col.nullable:
-                    raise ValueError(f'Полето „{col.label}“ е задължително.')
+                    raise ValueError(f'The field "{col.label}" is required.')
                 value = None
         elif value is None:
-            raise ValueError(f'Полето „{col.label}“ е задължително.')
+            raise ValueError(f'The field "{col.label}" is required.')
         cleaned[col.name] = value
     return cleaned
 
