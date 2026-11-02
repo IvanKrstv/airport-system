@@ -1,5 +1,3 @@
-from datetime import date
-
 from airport_system.db.connection import query
 from airport_system.db import queries
 
@@ -93,7 +91,3 @@ def no_flight_planes(date_from=None, date_to=None, company=None) -> list[dict]:
     return query(queries.NO_FLIGHT_PLANES_QUERY, {
         'date_from': date_from, 'date_to': date_to, 'company': _none_if_empty(company)
     })
-
-
-# Test
-print(no_flight_planes(date(2026,10,1), date(2026,10,31), 'Airbus'))

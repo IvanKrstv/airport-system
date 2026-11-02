@@ -13,6 +13,8 @@ import streamlit as st
 
 from airport_system.db import crud, procedures
 from airport_system.db.tables import TABLES, Column, Table
+from airport_system.views.common import error_text as _error_text
+from airport_system.views.flights import flight_details
 
 
 DIALOG_KEY = 'crud_dialog'
@@ -29,24 +31,6 @@ def _show_flash() -> None:
     if 'flash' in st.session_state:
         kind, text = st.session_state.pop('flash')
         getattr(st, kind)(text)
-
-
-def _error_text(error: psycopg.Error) -> str:
-    diag = error.diag
-    primary = diag.message_primary or str(error)
-    detail = diag.message_detail
-
-    if isinstance(error, psycopg.errors.RaiseException):
-        return primary  # съобщение от RAISE EXCEPTION в процедурата
-    if isinstance(error, psycopg.errors.ForeignKeyViolation):
-        text = 'The record is linked to other records and cannot be deleted (or it points to a non-existent record).'
-    elif isinstance(error, psycopg.errors.UniqueViolation):
-        text = 'A record with this value already exists.'
-    elif isinstance(error, psycopg.errors.CheckViolation):
-        return f'The value violates a constraint ({diag.constraint_name}).'
-    else:
-        text = primary
-    return f'{text} {detail}' if detail else text
 
 
 # ---------------------------------------------------------------- отваряне и затваряне на прозорците
@@ -87,7 +71,7 @@ def _attempt(action, success_message: str) -> None:
 
 # ---------------------------------------------------------------- полета на формите
 
-def _field(col: Column, default, key: str):
+def _field(col: Column, default, key: str, locked: str | None = None):
     if col.type == 'text':
         return st.text_input(col.label, value=default or '', max_chars=col.max_len, key=key)
 
@@ -116,15 +100,21 @@ def _field(col: Column, default, key: str):
             return None
         ids = [pk for pk, _ in options]
         index = ids.index(default) if default in ids else 0
-        return st.selectbox(col.label, ids, index=index,
-                            format_func=dict(options).get, key=key)
+        value = st.selectbox(col.label, ids, index=index, disabled=locked is not None,
+                             format_func=dict(options).get, key=key)
+        if locked:
+            st.caption(f':material/lock: {locked}')
+        return value
 
     raise ValueError(f'Unknown field type: {col.type}')
 
 
-def _form_fields(table: Table, defaults: dict | None, prefix: str) -> dict:
+def _form_fields(table: Table, defaults: dict | None, prefix: str,
+                 locked: dict[str, str] | None = None) -> dict:
+    """locked: колона -> причина; тези полета се показват заключени (засега само за 'fk')."""
+    locked = locked or {}
     return {col.name: _field(col, defaults.get(col.name) if defaults else None,
-                             f'{prefix}_{col.name}')
+                             f'{prefix}_{col.name}', locked.get(col.name))
             for col in table.columns}
 
 
@@ -149,6 +139,7 @@ def _table_view(table: Table, rows: list[dict]) -> None:
     column_config = {'_pk': None}           # служебната колона с ID не се показва
     actions = [(action, icon, help_text)
                for action, icon, help_text, allowed in (
+                   ('info', ':material/info:', 'Details', table.name == 'flight'),
                    ('edit', ':material/edit:', 'Edit', table.can_edit),
                    ('delete', ':material/delete:', 'Delete', table.can_delete))
                if allowed]
@@ -185,7 +176,8 @@ def _edit_body(table: Table, pk: int) -> None:
         return
 
     with st.form(f'edit_form_{table.name}_{pk}', border=False):
-        values = _form_fields(table, current, f'edit_{table.name}_{pk}')
+        values = _form_fields(table, current, f'edit_{table.name}_{pk}',
+                              crud.locked_columns(table.name, pk))
         submitted, cancelled = _form_buttons('Save')
     if cancelled:
         _close_dialog()
@@ -287,6 +279,14 @@ def _delete_dialog(table: Table, pk: int, rows: list[dict]) -> None:
     _delete_body(table, pk, rows)
 
 
+@st.dialog('Flight details', width='large', on_dismiss=_clear_dialog)
+def _flight_info_dialog(pk: int, rows: list[dict]) -> None:
+    row = next((r for r in rows if r['_pk'] == pk), None)
+    if row is not None:
+        st.caption(f'{row["From"]} → {row["To"]} · {row["Departure"]:%Y-%m-%d %H:%M}')
+    flight_details(pk)
+
+
 def _show_open_dialog(table: Table, rows: list[dict]) -> None:
     state = st.session_state.get(DIALOG_KEY)
     if state is None:
@@ -305,6 +305,8 @@ def _show_open_dialog(table: Table, rows: list[dict]) -> None:
         _edit_dialog(table, pk)
     elif action == 'delete':
         _delete_dialog(table, pk, rows)
+    elif action == 'info':
+        _flight_info_dialog(pk, rows)
 
 
 # ---------------------------------------------------------------- страницата

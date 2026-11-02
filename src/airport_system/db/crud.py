@@ -78,6 +78,21 @@ def seat_names_for_flight(flight_id: int) -> list[str]:
     return [row['seat_name'] for row in rows]
 
 # noinspection SqlResolve
+def locked_columns(table_key: str, pk_value: int) -> dict[str, str]:
+    """Колони, които не може да се редактират за този запис -> причина."""
+    if table_key == 'flight':
+        sql = 'SELECT COUNT(*) AS n FROM Ticket WHERE flight_id = %(pk)s'
+        reason = 'The plane cannot be changed - this flight has {n} sold ticket(s).'
+    elif table_key == 'seat':
+        sql = 'SELECT COUNT(*) AS n FROM Ticket WHERE seat_id = %(pk)s'
+        reason = 'The plane cannot be changed - this seat has been sold {n} time(s).'
+    else:
+        return {}
+    n = query(sql, {'pk': pk_value})[0]['n']
+    return {'plane_id': reason.format(n=n)} if n else {}
+
+
+# noinspection SqlResolve
 def country_name(country_id: int) -> str:
     rows = query('SELECT country_name FROM Country WHERE country_id = %(id)s',
                  {'id': country_id})
