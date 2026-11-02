@@ -1,9 +1,3 @@
-"""Описание на таблиците за универсалния CRUD.
-
-Тук е единственото място, което знае как изглежда всяка таблица. Ако добавиш
-нова таблица или колона в базата, добавяш я и тук - формите и списъците се
-оправят сами.
-"""
 from dataclasses import dataclass
 
 
@@ -23,8 +17,7 @@ class Table:
     name: str                       # име на таблицата в базата (малки букви)
     label: str                      # име в интерфейса
     pk: str                         # първичен ключ
-    # SQL израз с псевдоним {a}: как се показва един ред в падащите менюта
-    # и в колоните с външен ключ (вместо number-ID)
+    # SQL израз с псевдоним {a}: как се показва един ред в падащите менюта и в колоните с foreign key (вместо number-ID)
     label_sql: str
     columns: tuple[Column, ...]
     can_edit: bool = True
@@ -45,64 +38,64 @@ _SEAT_LABEL = (
 )
 
 TABLES: dict[str, Table] = {t.name: t for t in (
-    Table('country', 'Държави', 'country_id', '{a}.country_name', (
-        Column('country_name', 'Държава', 'text', max_len=30),
-        Column('country_code', 'Код (2 букви)', 'text', max_len=2, nullable=True),
+    Table('country', 'Countries', 'country_id', '{a}.country_name', (
+        Column('country_name', 'Country', 'text', max_len=30),
+        Column('country_code', 'Code (2 letters)', 'text', max_len=2, nullable=True),
     )),
-    Table('destination', 'Дестинации', 'destination_id', '{a}.city_name', (
-        Column('city_name', 'Град', 'text', max_len=30),
-        Column('country_id', 'Държава', 'fk', ref='country'),
+    Table('destination', 'Destinations', 'destination_id', '{a}.city_name', (
+        Column('city_name', 'City', 'text', max_len=30),
+        Column('country_id', 'Country', 'fk', ref='country'),
     )),
-    Table('company', 'Производители', 'company_id', '{a}.company_name', (
-        Column('company_name', 'Производител', 'text', max_len=30),
-        Column('country_id', 'Държава', 'fk', ref='country'),
+    Table('company', 'Manufacturers', 'company_id', '{a}.company_name', (
+        Column('company_name', 'Manufacturer', 'text', max_len=30),
+        Column('country_id', 'Country', 'fk', ref='country'),
     )),
-    Table('model', 'Модели самолети', 'model_id', '{a}.model_name', (
-        Column('model_name', 'Модел', 'text', max_len=50),
-        Column('model_capacity', 'Капацитет', 'int', min_value=1),
-        Column('company_id', 'Производител', 'fk', ref='company'),
+    Table('model', 'Aircraft models', 'model_id', '{a}.model_name', (
+        Column('model_name', 'Model', 'text', max_len=50),
+        Column('model_capacity', 'Capacity', 'int', min_value=1),
+        Column('company_id', 'Manufacturer', 'fk', ref='company'),
     )),
-    Table('plane', 'Самолети', 'plane_id', '{a}.license_plate', (
-        Column('model_id', 'Модел', 'fk', ref='model'),
-        Column('license_plate', 'Регистрация', 'text', max_len=10),
+    Table('plane', 'Planes', 'plane_id', '{a}.license_plate', (
+        Column('model_id', 'Model', 'fk', ref='model'),
+        Column('license_plate', 'Registration', 'text', max_len=10),
     )),
-    Table('seatclass', 'Класове места', 'seat_class_id', '{a}.seat_class_name', (
-        Column('seat_class_name', 'Клас', 'text', max_len=20),
-        Column('percent_increase', 'Надбавка (%)', 'int', min_value=0),
+    Table('seatclass', 'Seat classes', 'seat_class_id', '{a}.seat_class_name', (
+        Column('seat_class_name', 'Class', 'text', max_len=20),
+        Column('percent_increase', 'Surcharge (%)', 'int', min_value=0),
     )),
-    Table('seat', 'Места', 'seat_id', _SEAT_LABEL, (
-        Column('seat_name', 'Място', 'text', max_len=10),
-        Column('seat_class_id', 'Клас', 'fk', ref='seatclass'),
-        Column('plane_id', 'Самолет', 'fk', ref='plane'),
+    Table('seat', 'Seats', 'seat_id', _SEAT_LABEL, (
+        Column('seat_name', 'Seat', 'text', max_len=10),
+        Column('seat_class_id', 'Class', 'fk', ref='seatclass'),
+        Column('plane_id', 'Plane', 'fk', ref='plane'),
     )),
-    Table('jobposition', 'Длъжности', 'position_id', '{a}.position_name', (
-        Column('position_name', 'Длъжност', 'text', max_len=30),
-        Column('salary', 'Заплата', 'decimal', min_value=0.01),
+    Table('jobposition', 'Job positions', 'position_id', '{a}.position_name', (
+        Column('position_name', 'Position', 'text', max_len=30),
+        Column('salary', 'Salary', 'decimal', min_value=0.01),
     )),
-    Table('employee', 'Служители', 'employee_id', '{a}.employee_name', (
-        Column('employee_name', 'Име', 'text', max_len=50),
-        Column('phone_number', 'Телефон', 'text', max_len=13),
-        Column('position_id', 'Длъжност', 'fk', ref='jobposition'),
+    Table('employee', 'Employees', 'employee_id', '{a}.employee_name', (
+        Column('employee_name', 'Name', 'text', max_len=50),
+        Column('phone_number', 'Phone', 'text', max_len=13),
+        Column('position_id', 'Position', 'fk', ref='jobposition'),
     )),
-    Table('passenger', 'Пътници', 'passenger_id',
+    Table('passenger', 'Passengers', 'passenger_id',
           "{a}.passenger_name || ' (' || {a}.passport_id || ')'", (
-        Column('passport_id', 'Паспорт', 'text', max_len=20),
-        Column('passenger_name', 'Име', 'text', max_len=50),
-        Column('country_id', 'Държава', 'fk', ref='country'),
+        Column('passport_id', 'Passport', 'text', max_len=20),
+        Column('passenger_name', 'Name', 'text', max_len=50),
+        Column('country_id', 'Country', 'fk', ref='country'),
     )),
-    Table('flight', 'Полети', 'flight_id', _FLIGHT_LABEL, (
-        Column('flight_timestamp', 'Излитане', 'datetime'),
-        Column('price', 'Цена', 'decimal', min_value=0.01),
-        Column('plane_id', 'Самолет', 'fk', ref='plane'),
-        Column('from_destination_id', 'От', 'fk', ref='destination'),
-        Column('to_destination_id', 'До', 'fk', ref='destination'),
+    Table('flight', 'Flights', 'flight_id', _FLIGHT_LABEL, (
+        Column('flight_timestamp', 'Departure', 'datetime'),
+        Column('price', 'Price', 'decimal', min_value=0.01),
+        Column('plane_id', 'Plane', 'fk', ref='plane'),
+        Column('from_destination_id', 'From', 'fk', ref='destination'),
+        Column('to_destination_id', 'To', 'fk', ref='destination'),
     )),
-    Table('ticket', 'Билети', 'ticket_id', "'#' || {a}.ticket_id", (
-        Column('seat_id', 'Място', 'fk', ref='seat'),
-        Column('flight_id', 'Полет', 'fk', ref='flight'),
-        Column('passenger_id', 'Пътник', 'fk', ref='passenger'),
-        Column('employee_id', 'Служител', 'fk', ref='employee'),
-        Column('final_price', 'Цена', 'decimal', min_value=0.01),
-        Column('sold_at', 'Продаден на', 'datetime'),
+    Table('ticket', 'Tickets', 'ticket_id', "'#' || {a}.ticket_id", (
+        Column('seat_id', 'Seat', 'fk', ref='seat'),
+        Column('flight_id', 'Flight', 'fk', ref='flight'),
+        Column('passenger_id', 'Passenger', 'fk', ref='passenger'),
+        Column('employee_id', 'Employee', 'fk', ref='employee'),
+        Column('final_price', 'Price', 'decimal', min_value=0.01),
+        Column('sold_at', 'Sold at', 'datetime'),
     ), can_edit=False, can_delete=False),
 )}
